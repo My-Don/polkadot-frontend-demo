@@ -1,6 +1,6 @@
 # 🔴 Polkadot DApp
 
-> **Vue 3 + viem + @wagmi/core + vue-i18n**  DApp  
+> **Vue 3 + viem + @wagmi/core + vue-i18n**  全栈DApp  
 > 支持合约部署、钱包连接、合约执行调用、余额查询、状态更新、事件读取等完整功能
 
 ---
