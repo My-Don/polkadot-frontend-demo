@@ -1,6 +1,6 @@
 import { createConfig, http } from '@wagmi/core'
-import { injected } from '@wagmi/connectors'
 import { defineChain } from 'viem'
+import { WALLET_CONNECTORS } from './walletConnectors.js'
 
 // ── Polkadot Hub EVM 链配置 ──────────────────────────────────────────────────
 
@@ -49,15 +49,16 @@ export const getExplorerAddrUrl = (chainId, addr) => {
 
 // ── wagmi 配置 ───────────────────────────────────────────────────────────────
 
+// AppKit 官方 adapter 和项目里的直接 wagmi 调用都要复用这份 transport，避免两边链配置漂移。
+export const WAGMI_TRANSPORTS = {
+  [polkadotHubTestnet.id]: http(),
+  [polkadotHubMainnet.id]: http(),
+}
+
 export const wagmiConfig = createConfig({
   chains: SUPPORTED_CHAINS,
-  connectors: [
-    injected(),
-  ],
-  transports: {
-    [polkadotHubTestnet.id]: http(),
-    [polkadotHubMainnet.id]: http(),
-  },
+  connectors: WALLET_CONNECTORS,
+  transports: WAGMI_TRANSPORTS,
 })
 
 // ── BKC ERC1363 代币合约产物 ─────────────────────────────────────────────────

@@ -686,8 +686,51 @@ function formatValue(value) {
   .events-card { grid-column: auto; }
   .abi-card { grid-column: auto; }
   .abi-list { grid-template-columns: 1fr; }
-  .addr-bar { flex-wrap: wrap; }
+  .addr-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ab-left {
+    width: 100%;
+    align-items: flex-start;
+  }
+  .addr-bar .btn {
+    width: 100%;
+  }
   .info-panels { grid-template-columns: 1fr; }
-  .wa-inputs.wide { justify-content: flex-start; }
+  .wa-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .wa-inputs,
+  .wa-inputs.wide {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .wa-input,
+  .addr-input,
+  .amount-input,
+  .data-input {
+    width: 100%;
+  }
+  .query-row {
+    align-items: stretch;
+  }
+  .ev-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .ev-select {
+    flex: 1 1 160px;
+  }
+  .tr-gas {
+    margin-left: 0;
+  }
+  .log-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 }
 </style>

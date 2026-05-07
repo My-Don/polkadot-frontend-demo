@@ -4,7 +4,7 @@ import {
   deployContract, sendTransaction, getPublicClient,
 } from '@wagmi/core'
 import { decodeEventLog, parseEther } from 'viem'
-import { wagmiConfig } from '@/wagmi.config.js'
+import { getWalletRuntimeConfig } from '@/appkit/index.js'
 import { wallet } from '@/composables/useWallet.js'
 import { requireSupportedChainId } from '@/networkState.js'
 
@@ -22,8 +22,9 @@ export const useContract = () => {
   async function read(address, abi, fn, args = []) {
     loading.value = true; error.value = ''
     try {
+      const config = getWalletRuntimeConfig()
       const chainId = requireSupportedChainId(wallet.value.chainId)
-      return await readContract(wagmiConfig, {
+      return await readContract(config, {
         address, abi, functionName: fn, args,
         chainId,
       })
@@ -35,14 +36,15 @@ export const useContract = () => {
   async function write(address, abi, fn, args = [], value) {
     reset(); loading.value = true
     try {
+      const config = getWalletRuntimeConfig()
       const chainId = requireSupportedChainId(wallet.value.chainId)
-      const hash = await writeContract(wagmiConfig, {
+      const hash = await writeContract(config, {
         address, abi, functionName: fn, args,
         chainId,
         ...(value !== undefined ? { value } : {}),
       })
       txHash.value = hash
-      const rec = await waitForTransactionReceipt(wagmiConfig, { hash, chainId })
+      const rec = await waitForTransactionReceipt(config, { hash, chainId })
       receipt.value = rec
       // ABI 能解出来的日志才展示，避免其他合约日志把页面打崩。
       if (abi && rec.logs?.length) {
@@ -62,12 +64,13 @@ export const useContract = () => {
   async function deploy(abi, bytecode, args = []) {
     reset(); loading.value = true
     try {
+      const config = getWalletRuntimeConfig()
       const chainId = requireSupportedChainId(wallet.value.chainId)
-      const hash = await deployContract(wagmiConfig, {
+      const hash = await deployContract(config, {
         abi, bytecode, args, chainId,
       })
       txHash.value = hash
-      const rec = await waitForTransactionReceipt(wagmiConfig, { hash, chainId })
+      const rec = await waitForTransactionReceipt(config, { hash, chainId })
       receipt.value = rec
       return { hash, receipt: rec, contractAddress: rec.contractAddress }
     } catch (e) { error.value = e.shortMessage ?? e.message; throw e }
@@ -78,12 +81,13 @@ export const useContract = () => {
   async function sendNative(to, amount) {
     reset(); loading.value = true
     try {
+      const config = getWalletRuntimeConfig()
       const chainId = requireSupportedChainId(wallet.value.chainId)
-      const hash = await sendTransaction(wagmiConfig, {
+      const hash = await sendTransaction(config, {
         to, value: parseEther(amount), chainId,
       })
       txHash.value = hash
-      const rec = await waitForTransactionReceipt(wagmiConfig, { hash, chainId })
+      const rec = await waitForTransactionReceipt(config, { hash, chainId })
       receipt.value = rec
       return { hash, receipt: rec }
     } catch (e) { error.value = e.shortMessage ?? e.message; throw e }
@@ -94,8 +98,9 @@ export const useContract = () => {
   async function fetchEvents(address, abi, eventName, fromBlock = 0n) {
     loading.value = true; error.value = ''
     try {
+      const config = getWalletRuntimeConfig()
       const chainId = requireSupportedChainId(wallet.value.chainId)
-      const client = getPublicClient(wagmiConfig, { chainId })
+      const client = getPublicClient(config, { chainId })
       if (!client) throw new Error('Unsupported network')
       const ev = abi.find(i => i.type === 'event' && i.name === eventName)
       if (!ev) throw new Error(`Event ${eventName} not found in ABI`)

@@ -329,4 +329,35 @@ function copyText(text) {
     max-height: 520px;
   }
 }
+
+@media (max-width: 640px) {
+  .ci-grid,
+  .rg-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .fn-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: .4rem .6rem;
+  }
+
+  .fn-sig,
+  .fn-desc {
+    flex: 1 1 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .rg-val-row {
+    align-items: stretch;
+  }
+
+  .rg-val-row .btn {
+    flex: 1 1 70px;
+  }
+
+  .source-card .code-block {
+    max-height: 360px;
+  }
+}
 </style>

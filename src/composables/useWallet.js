@@ -5,8 +5,10 @@ import {
   getPublicClient,
 } from '@wagmi/core'
 import { formatEther, formatGwei } from 'viem'
-import { wagmiConfig, SUPPORTED_CHAINS } from '@/wagmi.config.js'
+import { getWalletRuntimeConfig } from '@/appkit/index.js'
+import { SUPPORTED_CHAINS } from '@/wagmi.config.js'
 import { getSupportedChainId, resolveNetworkState } from '@/networkState.js'
+import { selectWalletConnector } from '@/walletConnectors.js'
 
 // 钱包状态放在模块级，导航栏、仪表盘和业务页面看到的是同一份连接结果。
 export const wallet = ref({
@@ -30,6 +32,7 @@ export const useWallet = () => {
   const isSupported = computed(() => networkState.value.isSupported)
 
   async function refreshBalance() {
+    const config = getWalletRuntimeConfig()
     const { address, chainId } = wallet.value
     const supportedChainId = getSupportedChainId(chainId)
     if (!address || supportedChainId === null) {
@@ -39,7 +42,7 @@ export const useWallet = () => {
       return
     }
     try {
-      const b = await getBalance(wagmiConfig, { address, chainId: supportedChainId })
+      const b = await getBalance(config, { address, chainId: supportedChainId })
       wallet.value.balance       = parseFloat(formatEther(b.value)).toFixed(4)
       wallet.value.balanceRaw    = b.value
       wallet.value.balanceSymbol = b.symbol
@@ -61,16 +64,18 @@ export const useWallet = () => {
   }
 
   async function refreshWalletState() {
+    const config = getWalletRuntimeConfig()
     // 手动刷新时重新读取 wagmi 快照，避免链切换 watcher 偶发延迟导致页面信息落后。
-    sync(getAccount(wagmiConfig))
+    sync(getAccount(config))
     await refreshBalance()
   }
 
   function start() {
+    const config = getWalletRuntimeConfig()
     // 每个使用该 composable 的组件只监听自己生命周期内的变化，卸载时会清理 watcher。
-    sync(getAccount(wagmiConfig))
-    unwatchAcc   = watchAccount(wagmiConfig, { onChange: sync })
-    unwatchChain = watchChainId(wagmiConfig, {
+    sync(getAccount(config))
+    unwatchAcc   = watchAccount(config, { onChange: sync })
+    unwatchChain = watchChainId(config, {
       onChange(id) { wallet.value.chainId = id ?? null; refreshBalance() },
     })
   }
@@ -81,12 +86,12 @@ export const useWallet = () => {
   async function connectWallet(connectorId = 'injected') {
     loading.value = true; error.value = ''
     try {
-      const list = getConnectors(wagmiConfig)
-      // 钱包按钮传入的是语义 id，这里兼容不同 connector 的真实 id 命名。
-      const conn = list.find(c => c.id.toLowerCase().includes(connectorId.toLowerCase())) ?? list[0]
-      if (!conn) throw new Error('No connector found')
-      await connect(wagmiConfig, { connector: conn })
-      sync(getAccount(wagmiConfig))
+      const config = getWalletRuntimeConfig()
+      const list = getConnectors(config)
+      // 钱包按钮传入的是明确 id，找不到就报错，避免误连到另一个浏览器钱包。
+      const conn = selectWalletConnector(list, connectorId)
+      await connect(config, { connector: conn })
+      sync(getAccount(config))
     } catch (e) { error.value = e.shortMessage ?? e.message; throw e }
     finally { loading.value = false }
   }
@@ -94,7 +99,7 @@ export const useWallet = () => {
   async function disconnectWallet() {
     loading.value = true
     try {
-      await disconnect(wagmiConfig)
+      await disconnect(getWalletRuntimeConfig())
       // 断开后主动清空共享状态，避免下个页面还看到旧链和旧余额。
       wallet.value.address = null
       wallet.value.chainId = null
@@ -112,7 +117,7 @@ export const useWallet = () => {
   async function switchNetwork(chainId) {
     loading.value = true; error.value = ''
     try {
-      const switched = await switchChain(wagmiConfig, { chainId })
+      const switched = await switchChain(getWalletRuntimeConfig(), { chainId })
       wallet.value.chainId = switched?.id ?? chainId
       await refreshBalance()
     }
@@ -121,10 +126,11 @@ export const useWallet = () => {
   }
 
   async function fetchGasPrice() {
+    const config = getWalletRuntimeConfig()
     const chainId = getSupportedChainId(wallet.value.chainId)
     if (chainId === null) return null
     try {
-      const client = getPublicClient(wagmiConfig, { chainId })
+      const client = getPublicClient(config, { chainId })
       if (!client) return null
       const gp = await client.getGasPrice()
       return formatGwei(gp)
@@ -132,10 +138,11 @@ export const useWallet = () => {
   }
 
   async function fetchBlockNumber() {
+    const config = getWalletRuntimeConfig()
     const chainId = getSupportedChainId(wallet.value.chainId)
     if (chainId === null) return null
     try {
-      const client = getPublicClient(wagmiConfig, { chainId })
+      const client = getPublicClient(config, { chainId })
       if (!client) return null
       return (await client.getBlockNumber()).toString()
     } catch { return null }

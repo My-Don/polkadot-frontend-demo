@@ -132,7 +132,8 @@
 import { ref, computed } from 'vue'
 import { estimateGas } from '@wagmi/core'
 import { isAddress, parseEther } from 'viem'
-import { wagmiConfig, getExplorerTxUrl } from '@/wagmi.config.js'
+import { getWalletRuntimeConfig } from '@/appkit/index.js'
+import { getExplorerTxUrl } from '@/wagmi.config.js'
 import { requireSupportedChainId } from '@/networkState.js'
 import { useI18n }     from 'vue-i18n'
 import { useWallet }   from '@/composables/useWallet.js'
@@ -168,8 +169,9 @@ function setMax() {
 async function handleEstimate() {
   if (!canSend.value) return
   try {
+    const config = getWalletRuntimeConfig()
     const chainId = requireSupportedChainId(wallet.value.chainId)
-    const gas = await estimateGas(wagmiConfig, {
+    const gas = await estimateGas(config, {
       to: toAddr.value, value: parseEther(amount.value),
       chainId,
     })
@@ -261,4 +263,40 @@ const getTxUrl = (h) => getExplorerTxUrl(wallet.value.chainId, h) ?? '#'
   display: flex; align-items: flex-start; gap: .5rem;
 }
 .info-ul li::before { content: '•'; color: var(--pink); flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .transfer-layout {
+    max-width: none;
+  }
+
+  .main-card {
+    padding: 1rem;
+  }
+
+  .avail-bal {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .action-row,
+  .rr-cols {
+    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .action-row .btn {
+    width: 100%;
+  }
+
+  .gas-row,
+  .tx-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ts-amount {
+    margin-left: 0;
+  }
+}
 </style>

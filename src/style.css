@@ -48,6 +48,7 @@
   /* 导航 */
   --nav-w: 230px;
   --nav-collapsed: 64px;
+  --tablet-toolbar-h: 0px;
 }
 
 html { font-size: 15px; }
@@ -356,9 +357,75 @@ p  { line-height: 1.65; color: var(--t2); }
 /* ═══════════════════════════════════════════════════════
    响应式
    ═══════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  :root { --nav-w: 0px; }
-  .page-content { margin-left: 0; }
+@media (max-width: 900px) {
+  /* 平板态把导航压成导轨，并给顶部工具条留出固定高度。 */
+  :root {
+    --nav-w: 88px;
+    --tablet-toolbar-h: 72px;
+  }
+  .page-content {
+    padding-top: var(--tablet-toolbar-h);
+  }
+  .page-inner {
+    padding: 1.3rem 1.45rem 1.6rem;
+    max-width: 100%;
+  }
+  h1 { font-size: 1.72rem; }
+  .page-header { margin-bottom: 1.5rem; }
+  .page-header .header-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --nav-w: 0px;
+    --tablet-toolbar-h: 0px;
+  }
+  /* 只有真正手机宽度才切到底部导航，顶部钱包条和底部导航都固定定位，内容区要主动让出空间。 */
+  .page-content {
+    margin-left: 0;
+    padding-top: 56px;
+    padding-bottom: 70px;
+  }
   .page-inner { padding: 1.2rem; }
   h1 { font-size: 1.4rem; }
+}
+
+@media (max-width: 640px) {
+  .page-inner { padding: 1rem; }
+  .page-header { margin-bottom: 1.2rem; }
+  .page-header .header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .page-header .header-row .btn,
+  .page-header .header-row a.btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .card {
+    border-radius: var(--r);
+    padding: 1rem;
+  }
+  .card-head {
+    align-items: flex-start;
+    gap: .75rem;
+    flex-wrap: wrap;
+  }
+  .btn {
+    min-height: 38px;
+    justify-content: center;
+  }
+  .toast-wrap {
+    left: .9rem;
+    right: .9rem;
+    bottom: 4.5rem;
+    max-width: none;
+    min-width: 0;
+  }
+  .toast {
+    width: 100%;
+  }
 }

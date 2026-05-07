@@ -32,7 +32,7 @@
         <span class="cb-icon">🔗</span>
         <div>
           <div class="cb-title">{{ t('wallet.connectFirst') }}</div>
-          <div class="cb-sub">{{ t('wallet.noWallet') }}</div>
+          <div class="cb-sub">{{ connectHint }}</div>
         </div>
       </div>
     </div>
@@ -139,19 +139,19 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { HAS_APPKIT_PROJECT_ID, requestWalletPanelOpen } from '@/appkit/index.js'
 import { useWallet } from '@/composables/useWallet.js'
-import { useToast } from '@/composables/useToast.js'
 
 const { t } = useI18n()
 const {
   wallet, chain, networkState, shortAddr, supportedChains, loading: walletLoading,
-  connectWallet, refreshWalletState, fetchGasPrice, fetchBlockNumber,
+  refreshWalletState, fetchGasPrice, fetchBlockNumber,
 } = useWallet()
-const { success, error: toastError } = useToast()
 
 const gasPrice   = ref(null)
 const blockNumber = ref(null)
 const refreshing = ref(false)
+const hasAppKitWalletSelector = HAS_APPKIT_PROJECT_ID
 
 // 网络名和类型只从当前 chainId 推导，空值或未知链都不能被当成主网。
 const networkName = computed(() => {
@@ -175,6 +175,11 @@ const networkKindClass = computed(() => {
   return networkState.value.kind === 'testnet' ? 'badge-yellow' : 'badge-cyan'
 })
 
+// AppKit 已启用时，仪表盘提示要把 WalletConnect 一起说清楚，避免用户以为桌面端只能装浏览器插件。
+const connectHint = computed(() =>
+  hasAppKitWalletSelector ? t('wallet.noWalletSelector') : t('wallet.noWalletBrowser')
+)
+
 // 刷新链上统计时先清空旧值，防止网络切换后短暂显示上一条链的数据。
 async function fetchStats() {
   // 不支持的链直接清空链上统计，避免沿用上一次或默认链的 GAS/区块数据。
@@ -195,15 +200,9 @@ async function refreshDashboard() {
   }
 }
 
-// 仪表盘的快捷连接只使用注入钱包，具体钱包类型交给浏览器注入层识别。
-async function handleConnect() {
-  try {
-    await connectWallet('injected')
-    success(t('toast.walletConnected'))
-    await refreshDashboard()
-  } catch (e) {
-    toastError(t('toast.connectFailed', { msg: e.message }))
-  }
+// 仪表盘入口和侧栏入口统一走同一套钱包面板，这样桌面端也能看到 WalletConnect 选择器。
+function handleConnect() {
+  requestWalletPanelOpen()
 }
 
 onMounted(fetchStats)
@@ -302,6 +301,16 @@ watch(() => [wallet.value.isConnected, wallet.value.chainId], fetchStats)
 .ct-na    { color: var(--t4); }
 
 @media (max-width: 600px) {
+  .connect-banner {
+    padding: 1rem;
+  }
+  .cb-content {
+    gap: .75rem;
+  }
+  .stats-row,
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
   .ct-head, .ct-row { grid-template-columns: 1fr 1fr; }
   .ct-head span:nth-child(n+3),
   .ct-row span:nth-child(n+3) { display: none; }

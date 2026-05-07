@@ -26,7 +26,7 @@ import { RouterView } from 'vue-router'
 .page-fade-enter-from   { opacity: 0; transform: translateY(8px); }
 .page-fade-leave-to     { opacity: 0; transform: translateY(-6px); }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .page-content { padding-bottom: 70px; }
 }
 </style>
