@@ -1,7 +1,7 @@
-# 🔴 Polkadot DApp
+# 🔴 Polkadot EVM DApp
 
-> **Vue 3 + viem + @wagmi/core + vue-i18n**  全栈DApp  
-> 支持合约部署、钱包连接、合约执行调用、余额查询、状态更新、事件读取等完整功能
+> **Vue 3 + viem + wagmi + Reown AppKit + vue-i18n** 全栈 DApp  
+> 支持响应式布局、浏览器插件钱包连接、WalletConnect / AppKit 钱包选择器、合约部署、合约调用、余额查询、状态更新、事件读取等完整功能
 
 ---
 
@@ -13,6 +13,8 @@
 | viem | ^2.30 | EVM 底层 RPC 调用 |
 | @wagmi/core | ^2.16 | 钱包连接 / 交易管理 |
 | @wagmi/connectors | ^5.7 | MetaMask / Talisman 连接器 |
+| @reown/appkit | ^1.8 | 官方钱包选择器 / WalletConnect UI |
+| @reown/appkit-adapter-wagmi | ^1.8 | AppKit 与 wagmi 运行时适配 |
 | vue-i18n | ^9.14 | 中英文国际化 |
 | vue-router | ^4.5 | 多页面路由 |
 | OpenZeppelin Contracts | ^5.1 | BKC ERC20 / ERC1363 合约依赖 |
@@ -26,6 +28,7 @@
 | 网络 | Chain ID | 代币 | 类型 |
 |------|----------|------|------|
 | **Polkadot Hub TestNet** | 420420417 | PAS | Testnet ✓ 推荐测试 |
+| **Polkadot Hub** | 420420419 | DOT | Mainnet |
 
 ---
 
@@ -35,12 +38,77 @@
 # 1. 安装依赖
 npm install
 
-# 2. 启动开发服务器
+# 2. 可选：配置 WalletConnect / AppKit project id
+# 建议写到 .env.local
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+
+# 3. 启动开发服务器
 npm run dev
 
-# 3. 打开浏览器访问
+# 4. 打开浏览器访问
 http://localhost:5173
 ```
+
+### Reown AppKit / WalletConnect 配置
+
+完整钱包选择器现在走 Reown AppKit。这个项目会复用同一个 `projectId` 来支持：
+
+- AppKit 官方钱包选择器
+- WalletConnect v2 二维码 / deeplink
+- 钱包推荐列表与移动端跳转能力
+
+#### 1. 去哪里获取 `projectId`
+
+1. 打开 [Reown Dashboard](https://dashboard.reown.com/)
+2. 登录后点击 `Create Project`
+3. 创建一个新的项目
+4. 进入该项目详情页，复制 `Project ID`
+
+#### 2. 去项目里补允许域名（Allowlist）
+
+为了避免 `Invalid App Configuration` 一类错误，建议在 Reown 项目设置里把当前站点加入允许域名。
+
+本地开发至少加上：
+
+- `http://localhost:5173`
+- `http://127.0.0.1:5173`
+
+如果你改过本地端口，就把实际端口一起加进去。部署上线后，再把正式域名也补进去。
+
+#### 3. 配到本地项目
+
+项目不会硬编码这个值，请在本地环境里配置：
+
+```bash
+# D:\polkadot\.env.local
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+```
+
+#### 4. 重启开发服务器
+
+配置后重启开发服务器：
+
+```bash
+npm run dev
+```
+
+导航里的钱包入口会优先打开 AppKit 官方钱包选择器。未配置时页面会自动回退到当前项目内置的钱包弹窗，浏览器插件钱包仍可继续使用，但不会有完整的钱包推荐列表和扫码连接能力。
+
+### 钱包连接行为
+
+- 已配置 `VITE_WALLETCONNECT_PROJECT_ID`
+  - 桌面端和移动端钱包入口都会优先打开 Reown AppKit 官方钱包选择器
+  - 支持 WalletConnect v2 二维码 / deeplink
+  - 页面和 AppKit 共用同一份 wagmi 连接状态
+- 未配置 `VITE_WALLETCONNECT_PROJECT_ID`
+  - 自动回退到项目内置钱包弹窗
+  - 仍支持 `MetaMask`、`Talisman`、`SubWallet`、通用 `Injected Wallet`
+  - `WalletConnect` 扫码能力不会启用
+
+### 响应式入口
+
+- 桌面端：左侧导航里显示钱包状态、网络切换和语言切换
+- 移动端：顶部固定钱包条 + 底部导航，方便在每个页面直接连接钱包
 
 ---
 
@@ -51,6 +119,8 @@ src/
 ├── main.js                       # 应用入口
 ├── App.vue                       # 根组件（含 Topbar / Footer）
 ├── style.css                     # 全局设计系统
+├── appkit/
+│   └── index.js                  # AppKit 单例初始化 + 官方 wagmi adapter 运行时配置
 │
 ├── i18n/
 │   ├── index.js                  # createI18n + toggleLang
@@ -60,7 +130,7 @@ src/
 ├── router/
 │   └── index.js                  # vue-router 路由配置
 │
-├── wagmi.config.js               # 链定义 + wagmi config + ABI + Bytecode
+├── wagmi.config.js               # 链定义 + base wagmi config + runtime transport + ABI + Bytecode
 ├── contracts/
 │   ├── BKCERC1363Token.sol       # BKC ERC1363 代币源码
 │   └── BKCERC1363Token.compiled.js # solc 生成的 ABI + Bytecode
@@ -71,7 +141,7 @@ src/
 │   └── useToast.js               # 全局 toast 通知
 │
 ├── components/
-│   ├── NavBar.vue                # 侧边栏导航 + 钱包 Modal
+│   ├── NavBar.vue                # 侧边栏导航 + AppKit / 本地钱包弹窗入口
 │   └── ToastContainer.vue        # Toast 容器
 │
 └── views/
@@ -213,6 +283,7 @@ npm run verify:contract
 - **MetaMask** — 最广泛的 EVM 钱包
 - **Talisman** — Polkadot 原生多链钱包（同时支持 EVM + Substrate）
 - **SubWallet** — Polkadot 生态专属钱包
+- **WalletConnect** — 通过 Reown AppKit 提供二维码 / deeplink 连接（需配置 project id）
 - **任意注入钱包** — 支持 EIP-1193 接口的浏览器钱包
 
 ---
